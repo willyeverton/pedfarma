@@ -26,13 +26,13 @@ class AuthenticateJWTAuth extends BaseMiddleware
 
         } catch (\Exception $ex) {
             if($ex instanceof TokenInvalidException) {
-                return $this->jsonResponse('Invalid Access Token.');
+                return $this->jsonResponse('Token de acesso inválido');
 
             } else if($ex instanceof TokenExpiredException) {
-                return $this->jsonResponse('Expired Access Token.');
+                return $this->jsonResponse('Token de acesso espirado');
 
             } else {
-                return $this->jsonResponse('Access Token not found.');
+                return $this->jsonResponse('Token de acesso não informado');
             }
         }
         return $next($request);

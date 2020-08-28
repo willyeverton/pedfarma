@@ -10,11 +10,11 @@ use Illuminate\Http\Request;
 class FornecedorController extends Controller
 {
     protected array $validation = [
-        'nome_fantasia' => ['required', 'string', 'max:255'],
+        'nome_fantasia' => ['required', 'string',   'max:255'],
         'telefone'      => ['required', 'celular_com_ddd'],
-        'razao_social'  => [            'string', 'max:255'],
-        'email'         => ['required', 'max:255', 'email',],
-        'cnpj'          => ['required', 'formato_cnpj', 'cnpj']
+        'razao_social'  => ['nullable', 'string',   'max:255',  'unique:fornecedores'],
+        'email'         => ['required', 'max:255',  'email',    'unique:fornecedores'],
+        'cnpj'          => ['required', 'formato_cnpj', 'cnpj', 'unique:fornecedores']
     ];
 
     /**
@@ -23,15 +23,10 @@ class FornecedorController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $suppliers = Fornecedor::all();
-
-            if(is_null($suppliers)){
-                return $this->jsonResponse(parent::ERROR, 'No suppliers found');
-            }
-            return $this->jsonResponse(parent::SUCCESS, 'Suppliers found', $suppliers);
+            return $this->jsonResponse(Fornecedor::all());
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -44,13 +39,13 @@ class FornecedorController extends Controller
             $validator = $this->validateRequest($request);
 
             if($validator->fails()){
-                return $this->jsonResponse(parent::ERROR, 'Failed to validate data', $validator->errors());
+                return $this->jsonResponse($validator->errors(), parent::ERROR);
             }
             $supplier = $this->save(new Fornecedor(), $validator->validated());
-            return $this->jsonResponse(parent::SUCCESS, 'Supplier created!', $supplier);
+            return $this->jsonResponse($supplier);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -60,15 +55,10 @@ class FornecedorController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $supplier = Fornecedor::find($id);
-
-            if(is_null($supplier)){
-                return $this->jsonResponse(parent::ERROR, 'Supplier not found');
-            }
-            return $this->jsonResponse(parent::SUCCESS, 'Supplier found', $supplier);
+            return $this->jsonResponse(Fornecedor::find($id));
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -81,18 +71,19 @@ class FornecedorController extends Controller
             $validator = $this->validateRequest($request, false);
 
             if($validator->fails()){
-                return $this->jsonResponse(parent::ERROR, 'Failed to validate data', $validator->errors());
+                return $this->jsonResponse($validator->errors(), parent::ERROR);
             }
             $supplier = Fornecedor::find($id);
 
-            if(is_null($supplier)){
-                return $this->jsonResponse(parent::ERROR, 'Supplier not found');
+            if(empty($supplier)){
+                return $this->jsonResponse(null,  parent::ERROR);
             }
             $supplier = $this->save($supplier, $validator->validated());
-            return $this->jsonResponse(parent::SUCCESS, 'Supplier updated', $supplier);
+
+            return $this->jsonResponse($supplier);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -104,19 +95,19 @@ class FornecedorController extends Controller
         try {
             $supplier = Fornecedor::find($id);
 
-            if(is_null($supplier)){
-                return $this->jsonResponse(parent::ERROR, 'Supplier not found');
+            if(empty($supplier)){
+                return $this->jsonResponse(null, parent::ERROR);
             }
             $supplier->delete();
-            return $this->jsonResponse(parent::SUCCESS, 'Supplier Deleted!', $supplier);
+            return $this->jsonResponse($supplier);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
     /**
-     * Save data supplier.
+     * Save data.
      */
     private function save(Fornecedor $supplier, array $data): Fornecedor
     {

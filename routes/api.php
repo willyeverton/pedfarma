@@ -17,17 +17,17 @@ Route::group([ // PUBLIC AUTHENTICATION ROUTES
     'middleware' => ['api'],
     'prefix'     => 'auth'
 ], function () {
-    Route::post('user',  'Api\\AuthController@register');
-    Route::post('login', 'Api\\AuthController@login'   );
+    Route::post('credential', 'Api\\AuthController@register');
+    Route::post('token', 'Api\\AuthController@token');
 });
 
 Route::group([ // PRIVATE AUTHENTICATION ROUTES
     'middleware' => ['auth.jwt'],
     'prefix'     => 'auth'
 ], function () {
-    Route::post('logout', 'Api\\AuthController@logout');
-    Route::put( 'user',   'Api\\AuthController@update');
-    Route::delete('user', 'Api\\AuthController@destroy');
+    Route::post('deactivate', 'Api\\AuthController@deactivate');
+    Route::put( 'credential',   'Api\\AuthController@update');
+    Route::delete('credential', 'Api\\AuthController@destroy');
 });
 
 Route::group([ // PRIVATE ROUTES

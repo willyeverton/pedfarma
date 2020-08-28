@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
 
@@ -28,35 +27,36 @@ class AuthController extends Controller
             $validator = $this->validateRequest($request);
 
             if($validator->fails()){
-                return $this->jsonResponse(parent::ERROR, 'Failed to validate data', $validator->errors());
+                return $this->jsonResponse($validator->errors(), parent::ERROR);
             }
             $user = $this->save(new User(), $validator->validated());
-            return $this->jsonResponse(parent::SUCCESS, 'User Created', $user);
+            return $this->jsonResponse($user);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
     /**
      * Get a JWT via given credentials.
      */
-    public function login(Request $request): JsonResponse
+    public function token(Request $request): JsonResponse
     {
         try {
             $credentials = $request->only(['email', 'password']);
 
-            if(isset($request->jwt_ttl)) {
-                config()->set('jwt.ttl', $request->jwt_ttl);
+            if(isset($request->time)) {
+                config()->set('jwt.ttl', $request->time);
             }
             if (! $token = JWTAuth::attempt($credentials)) {
-                return $this->jsonResponse(parent::ERROR, 'Credentials unauthorized');
+                return $this->jsonResponse('Credenciais não autorizada', parent::ERROR);
             }
-            $response = ['token' => $token,'type' => 'bearer'];
-            return $this->jsonResponse(parent::SUCCESS, 'User logged in! Use this authorization bearer token for future requests.', (object)$response);
-
+            return $this->jsonResponse([
+                'token' => $token,
+                'type' => 'bearer'
+            ]);
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -69,19 +69,15 @@ class AuthController extends Controller
             $validator = $this->validateRequest($request, false);
 
             if($validator->fails()){
-                return $this->jsonResponse(parent::ERROR, 'Failed to validate data', $validator->errors());
+                return $this->jsonResponse($validator->errors(), parent::ERROR);
             }
-            $user_id = JWTAuth::user()->id;
-            $user = User::find($user_id);
-
-            if(is_null($user)){
-                return $this->jsonResponse(parent::ERROR, 'User not found');
-            }
+            $user = User::find(JWTAuth::user()->id);
             $user = $this->save($user, $validator->validated());
-            return $this->jsonResponse(parent::SUCCESS, 'User updated', $user);
+
+            return $this->jsonResponse($user);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -91,32 +87,31 @@ class AuthController extends Controller
     public function destroy(): JsonResponse
     {
         try {
-            $user_id = JWTAuth::user()->id;
-            $user = User::find($user_id);
+            $user = User::find(JWTAuth::user()->id);
 
-            if(is_null($user)){
-                return $this->jsonResponse(parent::ERROR, 'User not found');
-            }
             $user->delete();
-            return $this->jsonResponse(parent::SUCCESS, 'User Deleted!', $user);
+
+            JWTAuth::invalidate(JWTAuth::getToken());
+
+            return $this->jsonResponse($user);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
     /*
      * Log the user out (Invalidate the token).
      */
-    public function logout(): JsonResponse
+    public function deactivate(): JsonResponse
     {
         try {
             JWTAuth::invalidate(JWTAuth::getToken());
 
-            return $this->jsonResponse(parent::SUCCESS, 'Logged out');
+            return $this->jsonResponse('Token desativado', parent::SUCCESS);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 

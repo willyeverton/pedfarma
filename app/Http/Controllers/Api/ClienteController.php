@@ -13,8 +13,8 @@ class ClienteController extends Controller
     protected array $validation = [
         'nome'     => ['required', 'string', 'max:255'],
         'telefone' => ['required', 'celular_com_ddd'],
-        'email'    => ['required', 'max:255', 'email',],
-        'cpf'      => ['required', 'formato_cpf', 'cpf']
+        'email'    => ['required', 'max:255', 'email', 'unique:clientes'],
+        'cpf'      => ['required', 'formato_cpf', 'cpf', 'unique:clientes']
     ];
 
     /**
@@ -23,15 +23,10 @@ class ClienteController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $customers = Cliente::all();
-
-            if(is_null($customers)){
-                return $this->jsonResponse(parent::ERROR, 'No Customers found');
-            }
-            return $this->jsonResponse(parent::SUCCESS, 'Customers found', $customers);
+            return $this->jsonResponse(Cliente::all());
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -44,13 +39,13 @@ class ClienteController extends Controller
             $validator = $this->validateRequest($request);
 
             if($validator->fails()){
-                return $this->jsonResponse(parent::ERROR, 'Failed to validate data', $validator->errors());
+                return $this->jsonResponse($validator->errors(), parent::ERROR);
             }
             $customer = $this->save(new Cliente(), $validator->validated());
-            return $this->jsonResponse(parent::SUCCESS, 'Customer created!', $customer);
+            return $this->jsonResponse($customer);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -60,15 +55,10 @@ class ClienteController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $customer = Cliente::find($id);
-
-            if(is_null($customer)){
-                return $this->jsonResponse(parent::ERROR, 'Customer not found');
-            }
-            return $this->jsonResponse(parent::SUCCESS, 'Customer found', $customer);
+            return $this->jsonResponse(Cliente::find($id));
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -81,18 +71,19 @@ class ClienteController extends Controller
             $validator = $this->validateRequest($request, false);
 
             if($validator->fails()){
-                return $this->jsonResponse(parent::ERROR, 'Failed to validate data', $validator->errors());
+                return $this->jsonResponse($validator->errors(), parent::ERROR);
             }
             $customer = Cliente::find($id);
 
-            if(is_null($customer)){
-                return $this->jsonResponse(parent::ERROR, 'Customer not found');
+            if(empty($customer)){
+                return $this->jsonResponse(null,  parent::ERROR);
             }
             $customer = $this->save($customer, $validator->validated());
-            return $this->jsonResponse(parent::SUCCESS, 'Customer updated', $customer);
+
+            return $this->jsonResponse($customer);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
@@ -104,27 +95,26 @@ class ClienteController extends Controller
         try {
             $customer = Cliente::find($id);
 
-            if(is_null($customer)){
-                return $this->jsonResponse(parent::ERROR, 'Customer not found');
+            if(empty($customer)){
+                return $this->jsonResponse(null,  parent::ERROR);
             }
             $customer->delete();
-            return $this->jsonResponse(parent::SUCCESS, 'Customer Deleted!', $customer);
+            return $this->jsonResponse($customer);
 
         } catch (\Throwable $th) {
-            return $this->jsonResponse(parent::ERROR, $th->getMessage());
+            return $this->jsonResponse($th->getMessage(), parent::ERROR);
         }
     }
 
     /**
-     * Save data supplier.
+     * Save data.
      */
-    private function save(Cliente $customer, array $data): Cliente
+    private function save(Cliente $customer = null, array $data): Cliente
     {
-        isset($data['nome_fantasia']) ? $customer->nome_fantasia = $data['nome_fantasia'] : null;
-        isset($data['razao_social'])  ? $customer->razao_social  = $data['razao_social']  : null;
-        isset($data['email'])         ? $customer->email         = $data['email']         : null;
-        isset($data['cnpj'])          ? $customer->cnpj          = $data['cnpj']          : null;
-        isset($data['telefone'])      ? $customer->telefone      = $data['telefone']      : null;
+        isset($data['nome'])     ? $customer->nome     = $data['nome']     : null;
+        isset($data['email'])    ? $customer->email    = $data['email']    : null;
+        isset($data['cpf'])      ? $customer->cpf      = $data['cpf']      : null;
+        isset($data['telefone']) ? $customer->telefone = $data['telefone'] : null;
 
         $customer->save();
         return $customer;
