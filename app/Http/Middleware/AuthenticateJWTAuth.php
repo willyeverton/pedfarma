@@ -42,8 +42,7 @@ class AuthenticateJWTAuth extends BaseMiddleware
     {
         return response()->json([
             'status'  => 'error',
-            'message' => $message,
-            'data'    => null
+            'data'    => (object)['message' => [$message]]
         ], Response::HTTP_BAD_REQUEST);
     }
 }
